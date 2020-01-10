@@ -1,0 +1,61 @@
+syntax = "proto3";
+package api;
+
+service InfraShow {
+    // Get infra list
+    rpc GetInfraList (GetInfraListReq) returns (GetInfraListReply);
+
+    // Update infra list
+    rpc UpdateInfraList (UpdateInfraListReq) returns (UpdateInfraListReply);
+
+    //Delete infra
+    rpc DelInfra (DelInfraReq) returns (DelInfraReply);
+
+}
+
+// Get
+message GetInfraListReq {
+
+}
+
+message GetInfraListReply {
+    repeated InfraDetailReply infra = 1;
+}
+
+message InfraDetailReply {
+    int32 ID = 1;
+    string Code = 2;
+    string Name = 3;
+    string Type = 4;
+    string Location = 5;
+    string Description = 6;
+    string ManagedBy = 7;
+    string Status = 8;
+    string UpdateTime = 9;
+}
+
+// Update
+message UpdateInfraListReq {
+    int32 ID = 1;
+    string Code = 2;
+    string Name = 3;
+    string Type = 4;
+    string Location = 5;
+    string Description = 6;
+    string ManagedBy = 7;
+    string Status = 8;
+    string UpdateTime = 9;
+}
+
+message UpdateInfraListReply {
+    string Result = 1;
+}
+
+// Delete infra
+message DelInfraReq {
+    string Name = 1;
+}
+
+message DelInfraReply {
+    string Result = 1;
+}
