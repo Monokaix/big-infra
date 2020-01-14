@@ -1,0 +1,5 @@
+MySQL :
+  DSN : user:password@tcp(127.0.0.1:3306)/db?timeout=5s&parseTime=true&loc=Local&charset=utf8
+  Active : 10
+  Idle : 2
+  IdleTimeout : 4h
