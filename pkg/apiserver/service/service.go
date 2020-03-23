@@ -15,6 +15,7 @@ import (
 
 	v1 "big-infra/pkg/apiserver/api/v1"
 	"big-infra/pkg/apiserver/config"
+	"big-infra/pkg/apiserver/server"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
@@ -27,6 +28,7 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
+
 const (
 	_abortIndex  int8 = math.MaxInt8 / 2
 	_traceID          = "trace_id"
@@ -304,18 +306,12 @@ func (s *GrpcService) SignalHandler() {
 }
 
 func parseToken(tokenStr, authSecret string) (uid string, exp int64, err error) {
-	if authSecret == "" {
-		logger.Warnf("empty authSecret, will ignored signature Verify!")
-		// todo
-	}
-
 	fn := func(token *jwt.Token) (interface{}, error) {
 		return []byte(authSecret), nil
 	}
 
 	token, err := jwt.ParseWithClaims(tokenStr, &BasiceClaim{}, fn)
-	// 处理 err 可参考: https://godoc.org/github.com/dgrijalva/jwt-go#ex-Parse--ErrorChecking
-	// 或见 jwt.MapClaims 的 Valid()
+
 	if err != nil {
 		return
 	}
@@ -328,7 +324,7 @@ func parseToken(tokenStr, authSecret string) (uid string, exp int64, err error) 
 
 	uid = claim.UID
 	exp = claim.ExpiresAt
-	return
+	return uid, exp, nil
 }
 
 // GetUser is InfraApplyServiceV1's internal interface
@@ -338,18 +334,53 @@ func (h *InfraApplyServiceV1) GetUser(ctx context.Context) string {
 }
 
 // List
-func (s *InfraApplyServiceV1) ListInfraApply(ctx context.Context, in *v1.ListInfraApplyReq) (*v1.ListInfraApplyReply,error)  {
-	return &v1.ListInfraApplyReply{}, nil
+func (s *InfraApplyServiceV1) ListInfraApply(ctx context.Context, in *v1.ListInfraApplyReq) (*v1.ListInfraApplyReply, error) {
+	pageIdx, pageSize := in.PageIdx-1, in.PageSize
+	var limit, offset int32 = pageSize, pageSize * pageIdx
+
+	query := make(map[string]interface{})
+
+	search := make(map[string]interface{})
+	if in.Search != "" {
+		search["subject_name"] = in.Search
+	}
+
+	res, total, err := server.FindInfraApplyLikePattern(s.env.MysqlCli, query, search, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	ret := v1.ListInfraApplyReply{}
+	for _, ia := range res {
+		record := v1.DetailInfraApplyReply{
+			ID:          ia.ID,
+			DeviceCode:  ia.DeviceCode,
+			Applyer:     ia.Applyer,
+			Status:      ia.Status,
+			SubjectName: ia.SubjectName,
+			ReviewId:    ia.ReviewId,
+			ExpireTM:    ia.ExpiresAt.String(),
+			ReviewTM:    ia.ReviewedAt.String(),
+		}
+		ret.Record = append(ret.Record, &record)
+	}
+	ret.Page = &v1.ModelPage{PageSize: pageSize, PageIdx: pageIdx + 1, Total: int32(total)}
+	if (limit + offset) < int32(total) {
+		ret.Exhausted = false
+	} else {
+		ret.Exhausted = true
+	}
+	return &ret, nil
+
 }
 
-func (s *InfraApplyServiceV1) AddInfraApply(ctx context.Context, in *v1.AddInfraApplyReq) (*v1.AddInfraApplyReply,error)  {
+func (s *InfraApplyServiceV1) AddInfraApply(ctx context.Context, in *v1.AddInfraApplyReq) (*v1.AddInfraApplyReply, error) {
 	return &v1.AddInfraApplyReply{}, nil
 }
 
-func (s *InfraApplyServiceV1) UpdateInfraApply(ctx context.Context, in *v1.UpdateInfraApplyReq) (*v1.UpdateInfraApplyReply,error)  {
+func (s *InfraApplyServiceV1) UpdateInfraApply(ctx context.Context, in *v1.UpdateInfraApplyReq) (*v1.UpdateInfraApplyReply, error) {
 	return &v1.UpdateInfraApplyReply{}, nil
 }
 
-func (s *InfraApplyServiceV1) DelInfraApply(ctx context.Context, in *v1.DelInfraApplyReq) (*v1.DelInfraApplyReply,error) {
+func (s *InfraApplyServiceV1) DelInfraApply(ctx context.Context, in *v1.DelInfraApplyReq) (*v1.DelInfraApplyReply, error) {
 	return &v1.DelInfraApplyReply{}, nil
 }

@@ -7,31 +7,28 @@ import "google/api/annotations.proto";
 
 service INFRAAPPLY {
     // List infra apply
-    rpc ListInfraApply (ListInfraApplyReq) returns (ListInfraApplyReply){
+    rpc ListInfraApply (ListInfraApplyReq) returns (ListInfraApplyReply) {
         option (google.api.http) = {
             post: "/InfraApply.INFRAAPPLY/ListInfraApply"
             body: "*"
         };
     }
-
     // Add infra apply
-    rpc AddInfraApply (AddInfraApplyReq) returns (AddInfraApplyReply){
+    rpc AddInfraApply (AddInfraApplyReq) returns (AddInfraApplyReply) {
         option (google.api.http) = {
             post: "/InfraApply.INFRAAPPLY/AddInfraApply"
             body: "*"
         };
     }
-
     // Update infra apply
-    rpc UpdateInfraApply (UpdateInfraApplyReq) returns (UpdateInfraApplyReply){
+    rpc UpdateInfraApply (UpdateInfraApplyReq) returns (UpdateInfraApplyReply) {
         option (google.api.http) = {
             post: "/InfraApply.INFRAAPPLY/UpdateInfraApply"
             body: "*"
         };
     }
-
     //Delete infra
-    rpc DelInfraApply (DelInfraApplyReq) returns (DelInfraApplyReply){
+    rpc DelInfraApply (DelInfraApplyReq) returns (DelInfraApplyReply) {
         option (google.api.http) = {
             post: "/InfraApply.INFRAAPPLY/DelInfraApply"
             body: "*"
@@ -42,9 +39,9 @@ service INFRAAPPLY {
 
 // page message struct
 message ModelPage {
-    int32 pageIdx = 1; // start index with 1
-    int32 pageSize = 2; // if pageSize is -1, we will return all nodes
-    int32 total = 3; // the total number of records
+    int32 pageIdx = 1; // begin index is 1
+    int32 pageSize = 2; // if pageSize is -1, return all data
+    int32 total = 3; // all the records count
 }
 
 // List
@@ -56,7 +53,7 @@ message ListInfraApplyReq {
 
 message ListInfraApplyReply {
     ModelPage page = 1;
-    repeated DetailInfraApplyReply hosts = 2;
+    repeated DetailInfraApplyReply record = 2;
     bool exhausted = 3;
 }
 
@@ -66,8 +63,9 @@ message DetailInfraApplyReply {
     string applyer = 3;
     string status = 4;
     string subjectName = 5;
-    string expireTM = 6;
-    string reviewTM = 7;
+    string reviewId = 6;
+    string expireTM = 7;
+    string reviewTM = 8;
 }
 
 // Add
