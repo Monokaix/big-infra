@@ -1,61 +1,103 @@
 syntax = "proto3";
-package api;
+package InfraApply;
 
-service InfraShow {
-    // Get infra list
-    rpc GetInfraList (GetInfraListReq) returns (GetInfraListReply);
+option go_package = "v1";
 
-    // Update infra list
-    rpc UpdateInfraList (UpdateInfraListReq) returns (UpdateInfraListReply);
+import "google/api/annotations.proto";
+
+service INFRAAPPLY {
+    // List infra apply
+    rpc ListInfraApply (ListInfraApplyReq) returns (ListInfraApplyReply){
+        option (google.api.http) = {
+            post: "/InfraApply.INFRAAPPLY/ListInfraApply"
+            body: "*"
+        };
+    }
+
+    // Add infra apply
+    rpc AddInfraApply (AddInfraApplyReq) returns (AddInfraApplyReply){
+        option (google.api.http) = {
+            post: "/InfraApply.INFRAAPPLY/AddInfraApply"
+            body: "*"
+        };
+    }
+
+    // Update infra apply
+    rpc UpdateInfraApply (UpdateInfraApplyReq) returns (UpdateInfraApplyReply){
+        option (google.api.http) = {
+            post: "/InfraApply.INFRAAPPLY/UpdateInfraApply"
+            body: "*"
+        };
+    }
 
     //Delete infra
-    rpc DelInfra (DelInfraReq) returns (DelInfraReply);
+    rpc DelInfraApply (DelInfraApplyReq) returns (DelInfraApplyReply){
+        option (google.api.http) = {
+            post: "/InfraApply.INFRAAPPLY/DelInfraApply"
+            body: "*"
+        };
+    }
 
 }
 
-// Get
-message GetInfraListReq {
-
+// page message struct
+message ModelPage {
+    int32 pageIdx = 1; // start index with 1
+    int32 pageSize = 2; // if pageSize is -1, we will return all nodes
+    int32 total = 3; // the total number of records
 }
 
-message GetInfraListReply {
-    repeated InfraDetailReply infra = 1;
+// List
+message ListInfraApplyReq {
+    int32 pageIdx = 1;
+    int32 pageSize = 2;
+    string search = 3; //search by subject name
 }
 
-message InfraDetailReply {
+message ListInfraApplyReply {
+    ModelPage page = 1;
+    repeated DetailInfraApplyReply hosts = 2;
+    bool exhausted = 3;
+}
+
+message DetailInfraApplyReply {
     int32 ID = 1;
-    string Code = 2;
-    string Name = 3;
-    string Type = 4;
-    string Location = 5;
-    string Description = 6;
-    string ManagedBy = 7;
-    string Status = 8;
-    string UpdateTime = 9;
+    string deviceCode = 2;
+    string applyer = 3;
+    string status = 4;
+    string subjectName = 5;
+    string expireTM = 6;
+    string reviewTM = 7;
 }
 
+// Add
+message AddInfraApplyReq {
+    string deviceCode = 1;
+    string uid = 2;
+    string subjectName = 3;
+    string expireTM = 4;
+}
+
+message AddInfraApplyReply {
+    string result = 1;
+}
 // Update
-message UpdateInfraListReq {
+message UpdateInfraApplyReq {
     int32 ID = 1;
-    string Code = 2;
-    string Name = 3;
-    string Type = 4;
-    string Location = 5;
-    string Description = 6;
-    string ManagedBy = 7;
-    string Status = 8;
-    string UpdateTime = 9;
+    string status = 2;
+    string expireTM = 3;
 }
 
-message UpdateInfraListReply {
-    string Result = 1;
+message UpdateInfraApplyReply {
+    string result = 1;
 }
 
-// Delete infra
-message DelInfraReq {
-    string Name = 1;
+// Delete
+message DelInfraApplyReq {
+    string ID = 1;
+    string uid = 2;
 }
 
-message DelInfraReply {
-    string Result = 1;
+message DelInfraApplyReply {
+    string result = 1;
 }
