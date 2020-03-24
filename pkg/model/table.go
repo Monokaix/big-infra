@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-// TuPamApply
+// InfraApply
 type InfraApply struct {
 	ID          int32     `gorm:"primary_key"`
 	DeviceCode  string    `gorm:"column:device_code"`
@@ -11,7 +11,7 @@ type InfraApply struct {
 	SubjectName string    `gorm:"column:subject_name"`
 	ReviewId    string    `gorm:"column:review_id"`
 	ExpiresAt   time.Time `gorm:"column:expires_at"`
-	ReviewedAt  time.Time `gorm:"column:reviewed_at"`
+	ReviewedAt  time.Time `gorm:"column:review_at"`
 }
 
 // TableName is the getter for tables' names

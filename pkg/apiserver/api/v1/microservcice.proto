@@ -27,14 +27,13 @@ service INFRAAPPLY {
             body: "*"
         };
     }
-    //Delete infra
+    //Delete infra apply
     rpc DelInfraApply (DelInfraApplyReq) returns (DelInfraApplyReply) {
         option (google.api.http) = {
             post: "/InfraApply.INFRAAPPLY/DelInfraApply"
             body: "*"
         };
     }
-
 }
 
 // page message struct

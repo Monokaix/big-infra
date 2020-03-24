@@ -1,6 +1,7 @@
 package service
 
 import (
+	"big-infra/pkg/apiserver/util"
 	"context"
 	"errors"
 	"fmt"
@@ -9,11 +10,11 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"strings"
 	"syscall"
 	"time"
 
 	v1 "big-infra/pkg/apiserver/api/v1"
+	"big-infra/pkg/apiserver/common"
 	"big-infra/pkg/apiserver/config"
 	"big-infra/pkg/apiserver/server"
 
@@ -211,23 +212,23 @@ func (s *GrpcService) handle() grpc.UnaryServerInterceptor {
 		}
 
 		// 获取 header 的 authorization 字段的值建议用 go-grpc-middleware 里的 auth
-		var token string
-		if val, ok := md[_headerAuthz]; ok {
-			splits := strings.SplitN(val[0], " ", 2)
-			if len(splits) < 2 || splits[0] != _bearer {
-				return nil, status.Errorf(codes.Unauthenticated, "bad authorization string")
-			}
+		//var token string
+		//if val, ok := md[_headerAuthz]; ok {
+		//	splits := strings.SplitN(val[0], " ", 2)
+		//	if len(splits) < 2 || splits[0] != _bearer {
+		//		return nil, status.Errorf(codes.Unauthenticated, "bad authorization string")
+		//	}
+		//
+		//	token = splits[1]
+		//}
 
-			token = splits[1]
-		}
-
-		uid, _, err := parseToken(token, s.env.Cfg.Identify.AuthSecret)
-		if err != nil {
-			return nil, status.Errorf(codes.Unauthenticated, "parse token failed:", err)
-		}
-
-		md.Append(_token, token)
-		md.Append(_uid, uid)
+		//uid, _, err := parseToken(token, s.env.Cfg.Identify.AuthSecret)
+		//if err != nil {
+		//	return nil, status.Errorf(codes.Unauthenticated, "parse token failed:", err)
+		//}
+		//
+		//md.Append(_token, token)
+		//md.Append(_uid, uid)
 
 		newCtx := metadata.NewIncomingContext(ctx, md)
 
@@ -337,7 +338,6 @@ func (h *InfraApplyServiceV1) GetUser(ctx context.Context) string {
 func (s *InfraApplyServiceV1) ListInfraApply(ctx context.Context, in *v1.ListInfraApplyReq) (*v1.ListInfraApplyReply, error) {
 	pageIdx, pageSize := in.PageIdx-1, in.PageSize
 	var limit, offset int32 = pageSize, pageSize * pageIdx
-
 	query := make(map[string]interface{})
 
 	search := make(map[string]interface{})
@@ -351,7 +351,7 @@ func (s *InfraApplyServiceV1) ListInfraApply(ctx context.Context, in *v1.ListInf
 	}
 	ret := v1.ListInfraApplyReply{}
 	for _, ia := range res {
-		record := v1.DetailInfraApplyReply{
+		rec := v1.DetailInfraApplyReply{
 			ID:          ia.ID,
 			DeviceCode:  ia.DeviceCode,
 			Applyer:     ia.Applyer,
@@ -361,7 +361,7 @@ func (s *InfraApplyServiceV1) ListInfraApply(ctx context.Context, in *v1.ListInf
 			ExpireTM:    ia.ExpiresAt.String(),
 			ReviewTM:    ia.ReviewedAt.String(),
 		}
-		ret.Record = append(ret.Record, &record)
+		ret.Record = append(ret.Record, &rec)
 	}
 	ret.Page = &v1.ModelPage{PageSize: pageSize, PageIdx: pageIdx + 1, Total: int32(total)}
 	if (limit + offset) < int32(total) {
@@ -370,7 +370,6 @@ func (s *InfraApplyServiceV1) ListInfraApply(ctx context.Context, in *v1.ListInf
 		ret.Exhausted = true
 	}
 	return &ret, nil
-
 }
 
 func (s *InfraApplyServiceV1) AddInfraApply(ctx context.Context, in *v1.AddInfraApplyReq) (*v1.AddInfraApplyReply, error) {
@@ -378,7 +377,48 @@ func (s *InfraApplyServiceV1) AddInfraApply(ctx context.Context, in *v1.AddInfra
 }
 
 func (s *InfraApplyServiceV1) UpdateInfraApply(ctx context.Context, in *v1.UpdateInfraApplyReq) (*v1.UpdateInfraApplyReply, error) {
-	return &v1.UpdateInfraApplyReply{}, nil
+	//ok, err := server.CheckUserHasPermission(s.env.MysqlCli, s.GetUser(ctx), "tupam")
+	//if err != nil {
+	//	logger.Errorf("server err: %v", err)
+	//	return nil, status.Error(codes.Internal, "query db err")
+	//}
+	//
+	//if !ok {
+	//	return nil, status.Error(codes.PermissionDenied, "user has not permission")
+	//}
+
+	// query db: id
+	query := make(map[string]interface{})
+	query["id"] = in.ID
+	res, err := server.FindOneInfraApply(s.env.MysqlCli, query)
+	if err != nil {
+		logger.Errorf("server err: %v", err)
+		return nil, status.Error(codes.Internal, "query db err")
+	}
+
+	ret := v1.UpdateInfraApplyReply{}
+	if res == nil {
+		return &ret, status.Error(codes.NotFound, "empty result found")
+	}
+
+	updater := make(map[string]interface{})
+	updater["status"] = in.Status
+	updater["review_at"] = time.Now()
+
+	if in.ExpireTM != "" {
+		expireTm, err := util.StrToTime(in.ExpireTM)
+		if err != nil {
+			return &ret, status.Error(codes.InvalidArgument, "invalid param(expireTm)")
+		}
+		updater["expire_tm"] = expireTm
+	}
+
+	err = server.UpdateInfraApply(s.env.MysqlCli, res, updater)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "update db err")
+	}
+
+	return &v1.UpdateInfraApplyReply{Result: common.RESP_SUCCESS}, nil
 }
 
 func (s *InfraApplyServiceV1) DelInfraApply(ctx context.Context, in *v1.DelInfraApplyReq) (*v1.DelInfraApplyReply, error) {

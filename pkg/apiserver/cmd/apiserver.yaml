@@ -4,7 +4,7 @@ Identify:
   AuthSecret: my-secret
 
 MySQL:
-  DSN: root:root@tcp(127.0.0.1:3306)/BigInfra?timeout=5s&parseTime=true&loc=Local&charset=utf8
+  DSN: root:cxz1995818@tcp(127.0.0.1:3306)/BigInfra?timeout=5s&parseTime=true&loc=Local&charset=utf8
   Active: 10
   Idle: 2
   IdleTimeout: 4h
